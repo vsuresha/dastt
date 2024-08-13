@@ -13,7 +13,7 @@ jobs:
   dast_svd_onboarding:
     runs-on: pru-gisp-all-nprd-linux-runner-01
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Run DAST Onboarding Action
