@@ -1,20 +1,43 @@
-name: Call DAST-SVD Onboarding Workflow
+name: DAST-SVD Onboarding Action
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+description: Reusable action for DAST onboarding with Burp Suite
 
-jobs:
-  call_dast_svd_onboarding:
-    uses: ./.github/workflows/dast-svd-onboarding.yml
-    with:
-      app_name: GwISP-ctly-security
-      url: https://sample-vmapi.aks-lb1-sgrsss-uat-az1-tzbgb5.pru.intranet.asia
-      config: Pru_Audit_Policy
-    secrets:
-      DASTAPIKEY: ${{ secrets.DASTAPIKEY }}
+inputs:
+  app_name:
+    description: 'Application name'
+    required: true
+  url:
+    description: 'Target URL for the DAST scan'
+    required: true
+  config:
+    description: 'Scan configuration'
+    required: true
+  dast_api_host:
+    description: 'DAST API Host URL'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: DAST-Security-Burp-Onboarding
+      run: |
+        echo "=================================================="
+        echo "========--- DAST - Burp Scan: Start ---========"
+        echo "=================================================="
+
+        curl -k -w "\n" -X POST ${{ inputs.dast_api_host }}/api/${{ secrets.DASTAPIKEY }}/v0.1/scan \
+        -d '{"name":"${{ inputs.app_name }}","scan_configurations":[{"name":"${{ inputs.config }}","type":"NamedConfiguration"}],"urls":["${{ inputs.url }}"]}' -D headers.txt
+
+        cat headers.txt
+
+        if grep -q "201 Created" headers.txt; then
+          echo "SUCCESS: DAST Onboarding for App-id - ${{ inputs.app_name }} is completed" >> emailbody.txt
+        else
+          echo "FAILURE: DAST Onboarding for App-id - ${{ inputs.app_name }} failed with errors" >> emailbody.txt
+          exit 1
+        fi
+
+        echo "=================================================="
+        echo "========--- DAST - Burp Scan: End ---========"
+        echo "=================================================="
+
